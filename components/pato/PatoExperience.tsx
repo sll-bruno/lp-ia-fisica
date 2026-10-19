@@ -5,10 +5,12 @@ import { createPato, VISION_W, VISION_H } from "@/lib/pato/engine";
 
 type Phase =
   | "carregando" | "controle" | "gol" | "solto" | "visao"
-  | "gancho" | "odometria" | "laser" | "jogar";
-type Mode = "solto" | "visao" | "gancho" | "odometria" | "laser" | "jogar";
+  | "gancho" | "odometria" | "laser" | "jogar" | "decidir";
+type Mode = "solto" | "visao" | "gancho" | "odometria" | "laser" | "jogar" | "decidir";
 // Atalhos pra revisão: ?modo=solto, ?modo=visao, ?modo=localizar.
-const SHORTCUTS: Record<string, Mode> = { solto: "solto", visao: "visao", localizar: "gancho" };
+const SHORTCUTS: Record<string, Mode> = {
+  solto: "solto", visao: "visao", localizar: "gancho", decidir: "decidir",
+};
 type Api = NonNullable<Awaited<ReturnType<typeof createPato>>>;
 
 const LAYERS = ["pixels", "bordas", "bola"];
@@ -108,7 +110,7 @@ export default function PatoExperience() {
 
   useEffect(() => {
     const wait: Partial<Record<Phase, number>> = {
-      solto: 3500, visao: 9000, gancho: 7000, odometria: 9000, laser: 9000,
+      solto: 3500, visao: 9000, gancho: 7000, odometria: 9000, laser: 9000, jogar: 12000,
     };
     const ms = wait[phase];
     if (ms === undefined) return;
@@ -120,6 +122,12 @@ export default function PatoExperience() {
     apiRef.current?.setVisionLayer(layer);
   }, [layer, phase]);
 
+  // Embaixo de cada texto a sala vira papel (Percepcao.reservar, até 4).
+  useEffect(() => {
+    const els = [...document.querySelectorAll<HTMLElement>("[data-reserva]")];
+    apiRef.current?.reservar(els);
+  }, [phase, canAdvance, toast]);
+
   const go = (m: Mode) => {
     apiRef.current?.setMode(m);
     setPhase(m);
@@ -130,10 +138,12 @@ export default function PatoExperience() {
     gancho: ["odometria", "Contar os passos"],
     odometria: ["laser", "Ligar o laser"],
     laser: ["jogar", "Deixar ele jogar"],
+    jogar: ["decidir", "Ensinar o pato a escolher o caminho"],
   };
   const next = NEXT[phase];
   const showsVision = phase === "visao" || phase === "gancho" || phase === "jogar";
   const localizing = phase === "gancho" || phase === "odometria" || phase === "laser" || phase === "jogar";
+  const decidindo = phase === "decidir";
   const keysHint = (
     <div className="pato-keys" aria-label="WASD andar, Espaço chutar">
       {["W", "A", "S", "D"].map((k) => (
@@ -167,14 +177,14 @@ export default function PatoExperience() {
       )}
 
       {phase === "controle" && (
-        <div className="pato-top">
+        <div data-reserva className="pato-top">
           <h1 className="pato-title">Faça o pato marcar um gol</h1>
           {keysHint}
         </div>
       )}
 
       {phase === "gol" && (
-        <div className="pato-top pato-top-interactive">
+        <div data-reserva className="pato-top pato-top-interactive">
           <div className="pato-card">
             <p className="pato-lead">
               Quem marcou foi você. Seus olhos acharam a bola, você calculou o ângulo e decidiu a
@@ -197,11 +207,11 @@ export default function PatoExperience() {
 
       {phase === "visao" && (
         <>
-          <p className="pato-brain">
+          <p data-reserva className="pato-brain">
             Em 1959, Hubel e Wiesel acharam neurônios no córtex visual que só disparam pra linhas
             numa certa inclinação. As bordas que você vê aqui são isso.
           </p>
-          <aside className="pato-ficha">
+          <aside data-reserva className="pato-ficha">
             <p>
               <span className="pato-ficha-label">pra estudar</span> convolução, OpenCV
             </p>
@@ -214,7 +224,7 @@ export default function PatoExperience() {
       )}
 
       {phase === "gancho" && (
-        <div className="pato-top">
+        <div data-reserva className="pato-top">
           <h1 className="pato-title pato-title-small">
             Ele vê a bola. Mas não sabe onde está, nem onde fica o gol.
           </h1>
@@ -223,14 +233,14 @@ export default function PatoExperience() {
 
       {phase === "odometria" && (
         <>
-          <div className="pato-left">
+          <div data-reserva className="pato-left">
             <p>
               Ande de olhos fechados até a porta e você erra do mesmo jeito. Seu cérebro também
               conta passos, com as células de grade (Prêmio Nobel de 2014).
             </p>
             {keysHint}
           </div>
-          <p className="pato-legend">
+          <p data-reserva className="pato-legend">
             <span className="pato-swatch pato-swatch-ghost" /> onde o pato acha que está, contando
             só os comandos que recebeu
           </p>
@@ -239,7 +249,7 @@ export default function PatoExperience() {
 
       {phase === "laser" && (
         <>
-          <div className="pato-left">
+          <div data-reserva className="pato-left">
             <p>
               As células de lugar no hipocampo (O&apos;Keefe, 1971) só disparam quando você está
               num ponto específico do espaço.
@@ -247,7 +257,7 @@ export default function PatoExperience() {
             {keysHint}
             <p className="pato-muted pato-small">arraste o pato pra sequestrá-lo</p>
           </div>
-          <p className="pato-legend">
+          <p data-reserva className="pato-legend">
             <span className="pato-swatch pato-swatch-ray" /> o laser agora ·{" "}
             <span className="pato-swatch pato-swatch-map" /> o que ele já tocou ·{" "}
             <span className="pato-swatch pato-swatch-part" /> palpites de onde ele está ·{" "}
@@ -261,20 +271,51 @@ export default function PatoExperience() {
 
       {phase === "jogar" && (
         <>
-          <div className="pato-top">
+          <div data-reserva className="pato-top">
             <h1 className="pato-title pato-title-small">
               Agora ele sabe onde está. Mas ainda não sabe desviar.
             </h1>
           </div>
-          <p className="pato-legend">
+          <p data-reserva className="pato-legend">
             Localização simplificada: filtro de partículas em 2D com o mapa da sala já conhecido,
             não um SLAM completo.
           </p>
         </>
       )}
 
+      {decidindo && (
+        <>
+          <div data-reserva className="pato-left">
+            <p>
+              Antes de escolher um caminho, ratos &quot;ensaiam&quot; rotas: as células de lugar
+              disparam em sequência ao longo do trajeto que eles vão fazer (Pfeiffer e Foster,
+              2013).
+            </p>
+            <p className="pato-muted pato-small">arraste o livro, o chinelo ou a caixa</p>
+          </div>
+          <p data-reserva className="pato-legend">
+            <span className="pato-swatch pato-swatch-map" /> o que os lasers acham ocupado ·{" "}
+            <span className="pato-swatch pato-swatch-route" /> a rota ·{" "}
+            <span className="pato-swatch pato-swatch-ray" /> pra onde ele vai agora
+            <br />
+            Planejamento simplificado: A* numa grade 2D de 4 cm, com o pato tratado como um círculo
+            e sem prever como ele vira.
+          </p>
+          <aside data-reserva className="pato-ficha">
+            <p>
+              <span className="pato-ficha-label">pra estudar</span> grafos e A* (a introdução ao A*
+              do Red Blob Games), planejamento de movimento
+            </p>
+            <p>
+              <span className="pato-ficha-label">projeto opcional</span> planejar rotas no seu
+              simulador
+            </p>
+          </aside>
+        </>
+      )}
+
       {localizing && phase !== "gancho" && (
-        <aside className="pato-ficha">
+        <aside data-reserva className="pato-ficha">
           <p>
             <span className="pato-ficha-label">pra estudar</span> o livro Probabilistic Robotics
             (Thrun, Burgard e Fox), localização de Monte Carlo, SLAM

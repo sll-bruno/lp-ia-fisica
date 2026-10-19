@@ -353,22 +353,10 @@
   }
 }
 
-/* Na sala, os textos ficam sobre um fundo claro pra continuar legíveis. */
-.pato-left,
-.pato-ficha,
-.pato-legend,
-.pato-brain {
-  background: var(--pato-panel);
-  border-radius: 8px;
-  padding: 10px 12px;
-}
-
-.pato-title {
-  text-shadow: 0 0 14px var(--pato-bg), 0 0 4px var(--pato-bg);
-}
-
-.pato-keys {
-  background: var(--pato-panel);
-  border-radius: 8px;
-  padding: 4px 8px;
+.pato-swatch-route {
+  background: #3a3631;
+  border-radius: 1px;
+  height: 3px;
+  width: 12px;
+  vertical-align: 2px;
 }

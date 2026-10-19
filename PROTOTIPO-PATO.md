@@ -55,6 +55,17 @@ estado no console.
      a bola e o gol (geom estático baixo, fora do mapa do laser) fica no
      caminho e ele não desvia.
 
+6. **Decidir** (`?modo=decidir`): grade de ocupação de 4 cm montada pelo que
+   os lasers tocam: o horizontal (paredes, móveis) e um laser inclinado, com
+   anéis de raios saindo do mesmo sensor da cabeça rumo ao chão; se o raio
+   bate antes do chão, tem algo baixo ali (livro, chinelo, caixa), e se chega
+   no chão a célula é limpa. A* em 8 vizinhos sobre a grade inflada pelo raio
+   do pato (8 cm), da pose estimada até um ponto atrás da bola na linha
+   bola-gol (tenta ângulos e distâncias vizinhos se esse estiver bloqueado);
+   a rota é suavizada e seguida mirando 18 cm à frente. O visitante arrasta o
+   livro, o chinelo e a caixa; a rota se refaz a cada 0,4 s com o que o pato
+   já viu. Rota em tinta escura, ponto perseguido em laranja.
+
 ## A sala de casa
 
 A cena visual é a sala aprovada pela thread de design, em `lib/cena/`
