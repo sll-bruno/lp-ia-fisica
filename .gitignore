@@ -39,3 +39,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# binários copiados de node_modules por scripts/copy-wasm.mjs
+/public/pato/wasm
