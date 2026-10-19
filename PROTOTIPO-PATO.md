@@ -55,6 +55,24 @@ estado no console.
      a bola e o gol (geom estático baixo, fora do mapa do laser) fica no
      caminho e ele não desvia.
 
+## A sala de casa
+
+A cena visual é a sala aprovada pela thread de design, em `lib/cena/`
+(copiada sem alterações: `cena.js`, `sala.js`, `campo.js`, `luz.js`,
+`percepcao.js`, `util.js`, `r3f.jsx`; o `r3f.jsx` não é usado, o protótipo
+não usa react-three-fiber). O motor monta `criarCena()` na própria cena e
+desenha cada quadro com `Percepcao.render`, seguindo o tronco do pato.
+
+A física da sala está em `lib/pato/sala-fisica.js`: caixas e cilindros
+aproximando paredes, rack, sofá, puff, vaso, pilha de livros, caneca, tênis
+e os dois chinelos do gol, mais dois limites invisíveis nos lados abertos.
+O rack é fechado até o chão (o vão de 11 cm sob ele engoliria a bola). O
+laser enxerga só paredes, rack, sofá, puff e vaso (o resto é baixo demais).
+
+A bola é a de tênis da cena (raio 3,35 cm, 57 g). A visão procura o
+amarelo-esverdeado dela (matiz 50–78) e fica com a maior mancha conectada; a
+câmera da cabeça usa o mesmo tom da Percepcao (ACES, exposição 1,1).
+
 ## Ajustes que não existem no simulador oficial
 
 - **Paredes de 30 cm e gol de 28 cm** (antes 12 e 18): o sensor da cabeça

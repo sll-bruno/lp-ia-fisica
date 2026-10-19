@@ -248,7 +248,8 @@ export default function PatoExperience() {
             <p className="pato-muted pato-small">arraste o pato pra sequestrá-lo</p>
           </div>
           <p className="pato-legend">
-            <span className="pato-swatch pato-swatch-map" /> o que o laser já tocou ·{" "}
+            <span className="pato-swatch pato-swatch-ray" /> o laser agora ·{" "}
+            <span className="pato-swatch pato-swatch-map" /> o que ele já tocou ·{" "}
             <span className="pato-swatch pato-swatch-part" /> palpites de onde ele está ·{" "}
             <span className="pato-swatch pato-swatch-ghost" /> o melhor palpite
             <br />
@@ -320,7 +321,7 @@ export default function PatoExperience() {
           ))}
         </div>
         <p className="pato-note">
-          Visão simplificada: bordas e cor, sem rede neural. O pato procura o magenta, centraliza e
+          Visão simplificada: bordas e cor, sem rede neural. O pato procura o amarelo da bola de tênis, centraliza e
           anda até ele.
         </p>
       </div>

@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Wrappers react-three-fiber da thread de design: o protótipo não usa
+    // r3f, e o arquivo é deles (não editamos).
+    "lib/cena/r3f.jsx",
   ]),
 ]);
 

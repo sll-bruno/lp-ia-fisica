@@ -334,7 +334,11 @@
 }
 
 .pato-swatch-part {
-  background: #c2410c;
+  background: #7d766c;
+}
+
+.pato-swatch-ray {
+  background: #e8752a;
 }
 
 @media (max-width: 720px) {
@@ -347,4 +351,24 @@
   .pato-legend {
     display: none;
   }
+}
+
+/* Na sala, os textos ficam sobre um fundo claro pra continuar legíveis. */
+.pato-left,
+.pato-ficha,
+.pato-legend,
+.pato-brain {
+  background: var(--pato-panel);
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+.pato-title {
+  text-shadow: 0 0 14px var(--pato-bg), 0 0 4px var(--pato-bg);
+}
+
+.pato-keys {
+  background: var(--pato-panel);
+  border-radius: 8px;
+  padding: 4px 8px;
 }
