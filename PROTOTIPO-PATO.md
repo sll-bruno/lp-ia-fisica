@@ -23,7 +23,9 @@ estado no console.
    lado da bola (chute cego de 0,5 s), perto ou longe, parado ou andando.
    Chutando andando ele costuma cair e se levanta sozinho, de propósito: antes
    de aprender, o pato cai. A bola começa um pouco fora do alcance.
-2. **Gol**: mensagem "Quem marcou foi você…" e botão "Solte o controle".
+2. **Gol**: mensagem "Quem marcou foi você…" e botão "Solte o controle", que
+   ficam até o clique. Em qualquer modo, ~4 s depois de um gol a cena reseta
+   (pato e bola voltam às posições iniciais).
 3. **Solto**: comandos aleatórios e chutes no vazio na hora (também cai às
    vezes); aparece "Dar visão ao pato".
 4. **Perceber**: janela com a câmera da cabeça (câmera `head_camera` do MJCF,
