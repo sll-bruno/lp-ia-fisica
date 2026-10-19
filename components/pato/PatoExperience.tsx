@@ -3,7 +3,12 @@
 import { useEffect, useRef, useState } from "react";
 import { createPato, VISION_W, VISION_H } from "@/lib/pato/engine";
 
-type Phase = "carregando" | "controle" | "gol" | "solto" | "visao";
+type Phase =
+  | "carregando" | "controle" | "gol" | "solto" | "visao"
+  | "gancho" | "odometria" | "laser" | "jogar";
+type Mode = "solto" | "visao" | "gancho" | "odometria" | "laser" | "jogar";
+// Atalhos pra revisão: ?modo=solto, ?modo=visao, ?modo=localizar.
+const SHORTCUTS: Record<string, Mode> = { solto: "solto", visao: "visao", localizar: "gancho" };
 type Api = NonNullable<Awaited<ReturnType<typeof createPato>>>;
 
 const LAYERS = ["pixels", "bordas", "bola"];
@@ -16,13 +21,15 @@ export default function PatoExperience() {
   const [phase, setPhaseState] = useState<Phase>("carregando");
   const [progress, setProgress] = useState<string | null>("preparando");
   const [failed, setFailed] = useState<string | null>(null);
-  const [canGiveSight, setCanGiveSight] = useState(false);
+  // Botão de avançar de cada fase aparece depois de um tempo nela.
+  const [canAdvance, setCanAdvance] = useState(false);
   const [layer, setLayer] = useState(0);
   const [toast, setToast] = useState<string | null>(null);
   const [pressed, setPressed] = useState<Set<string>>(() => new Set());
 
   const setPhase = (p: Phase) => {
     phaseRef.current = p;
+    setCanAdvance(false);
     setPhaseState(p);
   };
 
@@ -40,8 +47,8 @@ export default function PatoExperience() {
           onGoal: () => {
             const p = phaseRef.current;
             if (p === "controle") setPhase("gol");
-            else if (p === "visao") {
-              setToast("Gol do pato.");
+            else if (p !== "gol") {
+              setToast(p === "odometria" || p === "laser" ? "Gol." : "Gol do pato.");
               window.setTimeout(() => setToast(null), 2200);
             }
           },
@@ -50,9 +57,8 @@ export default function PatoExperience() {
         else if (created) {
           api = created;
           apiRef.current = created;
-          // Atalho pra revisão: ?modo=solto ou ?modo=visao pula direto.
-          const modo = new URLSearchParams(window.location.search).get("modo");
-          if (modo === "solto" || modo === "visao") {
+          const modo = SHORTCUTS[new URLSearchParams(window.location.search).get("modo") ?? ""];
+          if (modo) {
             created.setMode(modo);
             setPhase(modo);
           } else setPhase("controle");
@@ -101,8 +107,12 @@ export default function PatoExperience() {
   }, []);
 
   useEffect(() => {
-    if (phase !== "solto") return;
-    const t = window.setTimeout(() => setCanGiveSight(true), 3500);
+    const wait: Partial<Record<Phase, number>> = {
+      solto: 3500, visao: 9000, gancho: 7000, odometria: 9000, laser: 9000,
+    };
+    const ms = wait[phase];
+    if (ms === undefined) return;
+    const t = window.setTimeout(() => setCanAdvance(true), ms);
     return () => window.clearTimeout(t);
   }, [phase]);
 
@@ -110,14 +120,39 @@ export default function PatoExperience() {
     apiRef.current?.setVisionLayer(layer);
   }, [layer, phase]);
 
-  const releaseControl = () => {
-    apiRef.current?.setMode("solto");
-    setPhase("solto");
+  const go = (m: Mode) => {
+    apiRef.current?.setMode(m);
+    setPhase(m);
   };
-  const giveSight = () => {
-    apiRef.current?.setMode("visao");
-    setPhase("visao");
+  const NEXT: Partial<Record<Phase, [Mode, string]>> = {
+    solto: ["visao", "Dar visão ao pato"],
+    visao: ["gancho", "Ensinar o pato a se localizar"],
+    gancho: ["odometria", "Contar os passos"],
+    odometria: ["laser", "Ligar o laser"],
+    laser: ["jogar", "Deixar ele jogar"],
   };
+  const next = NEXT[phase];
+  const showsVision = phase === "visao" || phase === "gancho" || phase === "jogar";
+  const localizing = phase === "gancho" || phase === "odometria" || phase === "laser" || phase === "jogar";
+  const keysHint = (
+    <div className="pato-keys" aria-label="WASD andar, Espaço chutar">
+      {["W", "A", "S", "D"].map((k) => (
+        <span key={k} className={`pato-key${pressed.has(k) ? " is-down" : ""}`}>
+          {k}
+        </span>
+      ))}
+      <span className="pato-key-label">andar</span>
+      {phase === "controle" && (
+        <>
+          <span className="pato-key-sep">·</span>
+          <span className={`pato-key pato-key-wide${pressed.has("Espaço") ? " is-down" : ""}`}>
+            Espaço
+          </span>
+          <span className="pato-key-label">chutar</span>
+        </>
+      )}
+    </div>
+  );
 
   const layerIdx = Math.round(layer);
 
@@ -134,19 +169,7 @@ export default function PatoExperience() {
       {phase === "controle" && (
         <div className="pato-top">
           <h1 className="pato-title">Faça o pato marcar um gol</h1>
-          <div className="pato-keys" aria-label="WASD andar, Espaço chutar">
-            {["W", "A", "S", "D"].map((k) => (
-              <span key={k} className={`pato-key${pressed.has(k) ? " is-down" : ""}`}>
-                {k}
-              </span>
-            ))}
-            <span className="pato-key-label">andar</span>
-            <span className="pato-key-sep">·</span>
-            <span className={`pato-key pato-key-wide${pressed.has("Espaço") ? " is-down" : ""}`}>
-              Espaço
-            </span>
-            <span className="pato-key-label">chutar</span>
-          </div>
+          {keysHint}
         </div>
       )}
 
@@ -157,17 +180,17 @@ export default function PatoExperience() {
               Quem marcou foi você. Seus olhos acharam a bola, você calculou o ângulo e decidiu a
               hora. O pato só chutou.
             </p>
-            <button className="pato-button" onClick={releaseControl}>
+            <button className="pato-button" onClick={() => go("solto")}>
               Solte o controle
             </button>
           </div>
         </div>
       )}
 
-      {phase === "solto" && canGiveSight && (
+      {next && canAdvance && (
         <div className="pato-bottom">
-          <button className="pato-button" onClick={giveSight}>
-            Dar visão ao pato
+          <button className="pato-button" onClick={() => go(next[0])}>
+            {next[1]}
           </button>
         </div>
       )}
@@ -187,11 +210,84 @@ export default function PatoExperience() {
               próprio simulador
             </p>
           </aside>
-          {toast && <p className="pato-toast">{toast}</p>}
         </>
       )}
 
-      <div className="pato-vision" hidden={phase !== "visao"}>
+      {phase === "gancho" && (
+        <div className="pato-top">
+          <h1 className="pato-title pato-title-small">
+            Ele vê a bola. Mas não sabe onde está, nem onde fica o gol.
+          </h1>
+        </div>
+      )}
+
+      {phase === "odometria" && (
+        <>
+          <div className="pato-left">
+            <p>
+              Ande de olhos fechados até a porta e você erra do mesmo jeito. Seu cérebro também
+              conta passos, com as células de grade (Prêmio Nobel de 2014).
+            </p>
+            {keysHint}
+          </div>
+          <p className="pato-legend">
+            <span className="pato-swatch pato-swatch-ghost" /> onde o pato acha que está, contando
+            só os comandos que recebeu
+          </p>
+        </>
+      )}
+
+      {phase === "laser" && (
+        <>
+          <div className="pato-left">
+            <p>
+              As células de lugar no hipocampo (O&apos;Keefe, 1971) só disparam quando você está
+              num ponto específico do espaço.
+            </p>
+            {keysHint}
+            <p className="pato-muted pato-small">arraste o pato pra sequestrá-lo</p>
+          </div>
+          <p className="pato-legend">
+            <span className="pato-swatch pato-swatch-map" /> o que o laser já tocou ·{" "}
+            <span className="pato-swatch pato-swatch-part" /> palpites de onde ele está ·{" "}
+            <span className="pato-swatch pato-swatch-ghost" /> o melhor palpite
+            <br />
+            Localização simplificada: filtro de partículas em 2D com o mapa da sala já conhecido,
+            não um SLAM completo.
+          </p>
+        </>
+      )}
+
+      {phase === "jogar" && (
+        <>
+          <div className="pato-top">
+            <h1 className="pato-title pato-title-small">
+              Agora ele sabe onde está. Mas ainda não sabe desviar.
+            </h1>
+          </div>
+          <p className="pato-legend">
+            Localização simplificada: filtro de partículas em 2D com o mapa da sala já conhecido,
+            não um SLAM completo.
+          </p>
+        </>
+      )}
+
+      {localizing && phase !== "gancho" && (
+        <aside className="pato-ficha">
+          <p>
+            <span className="pato-ficha-label">pra estudar</span> o livro Probabilistic Robotics
+            (Thrun, Burgard e Fox), localização de Monte Carlo, SLAM
+          </p>
+          <p>
+            <span className="pato-ficha-label">projeto opcional</span> dar um LiDAR ao seu
+            simulador e desenhar o mapa
+          </p>
+        </aside>
+      )}
+
+      {toast && <p className="pato-toast">{toast}</p>}
+
+      <div className="pato-vision" hidden={!showsVision}>
         <div className="pato-vision-head">
           <span>câmera da cabeça</span>
           <span className="pato-muted">arraste a bola</span>

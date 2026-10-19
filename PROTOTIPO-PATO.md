@@ -33,7 +33,34 @@ estado no console.
    (máscara de cor + caixa). O pato acha a bola só pela imagem: centróide e
    caixa da máscara magenta → gira, anda, para e chuta. Dá pra arrastar a bola.
 
+5. **Se localizar** (`?modo=localizar`):
+   - **Gancho**: depois da visão, o pato recomeça de costas pro gol e chuta
+     pra parede. "Ele vê a bola. Mas não sabe onde está, nem onde fica o gol."
+   - **Contar os passos (odometria)**: um pato fantasma integra só o comando
+     que a política recebeu (avanço e giro), nunca a pose real. O desvio é o
+     real entre comando e execução: a política anda ~0,1 m/s quando o comando
+     pede 0,25, e gira ~1,5 rad/s quando pede 2,5. Medido: 0,59 m de erro
+     depois de 4 s andando reto; 1,3 m depois de 15 s de passeio.
+   - **Ligar o laser**: 90 raios horizontais por varredura, a 10 Hz, saindo do
+     sensor "tof" da cabeça via `mj_ray` (só geoms do grupo 0: paredes, gol e
+     uma caixa no canto; o pato, a bola e o livro ficam fora). Os impactos
+     viram o mapa no chão (grade de 1,5 cm). Filtro de partículas 2D (1500
+     partículas, 45 feixes por atualização, MCL aumentado contra sequestro) no
+     mapa conhecido. Movimento do filtro: avanço comandado com ruído largo +
+     giro do giroscópio da IMU.
+   - **Sequestro**: arrastar o pato com o mouse o carrega pelo ar (pose do
+     corpo livre escrita direto) e o larga em outro lugar.
+   - **Deixar ele jogar**: com a pose estimada, ele vai a um ponto atrás da
+     bola na linha bola-gol, se alinha com o gol e ataca reto. Um livro entre
+     a bola e o gol (geom estático baixo, fora do mapa do laser) fica no
+     caminho e ele não desvia.
+
 ## Ajustes que não existem no simulador oficial
+
+- **Paredes de 30 cm e gol de 28 cm** (antes 12 e 18): o sensor da cabeça
+  fica a ~22 cm do chão e o laser precisa enxergar a sala.
+- **Caixa alta num canto**: a sala quadrada tem poses quase simétricas, e o
+  filtro às vezes se fixava na pose girada 180°. A caixa quebra a simetria.
 
 - **Giro mais forte**: o teclado manda 2,5 rad/s parado e 1,8 andando (o oficial
   usa 1,0). A política gira parada a ~0,1 rad/s com 1,0; com 2,5 gira ~1,5 rad/s
