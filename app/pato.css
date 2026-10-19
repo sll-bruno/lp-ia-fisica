@@ -67,8 +67,40 @@
 }
 
 .pato-key-wide {
-  margin-left: 8px;
   padding: 0 14px;
+}
+
+.pato-keys {
+  align-items: center;
+}
+
+.pato-key.is-down {
+  background: var(--pato-ink);
+  border-color: var(--pato-ink);
+  color: var(--pato-bg);
+}
+
+.pato-key-label {
+  margin-left: 4px;
+  font-size: 13px;
+  color: var(--pato-muted);
+}
+
+.pato-key-sep {
+  margin: 0 8px;
+  color: var(--pato-muted);
+}
+
+.pato-hint {
+  min-height: 1.4em;
+  font-size: 14px;
+  color: var(--pato-ink);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.pato-hint.is-on {
+  opacity: 1;
 }
 
 .pato-center {

@@ -19,6 +19,8 @@ export default function PatoExperience() {
   const [canGiveSight, setCanGiveSight] = useState(false);
   const [layer, setLayer] = useState(0);
   const [toast, setToast] = useState<string | null>(null);
+  const [hint, setHint] = useState<string | null>(null);
+  const [pressed, setPressed] = useState<Set<string>>(() => new Set());
 
   const setPhase = (p: Phase) => {
     phaseRef.current = p;
@@ -28,6 +30,7 @@ export default function PatoExperience() {
   useEffect(() => {
     let api: Api | null = null;
     let cancelled = false;
+    let hintTimer = 0;
     // O StrictMode monta, desmonta e monta de novo em sequência: o atraso
     // evita dois motores disputando o mesmo canvas.
     const start = window.setTimeout(async () => {
@@ -36,6 +39,11 @@ export default function PatoExperience() {
           canvas: canvasRef.current!,
           visionCanvas: visionRef.current!,
           onProgress: (msg: string | null) => setProgress(msg),
+          onHint: (msg: string) => {
+            setHint(msg);
+            window.clearTimeout(hintTimer);
+            hintTimer = window.setTimeout(() => setHint(null), 1600);
+          },
           onGoal: () => {
             const p = phaseRef.current;
             if (p === "controle") setPhase("gol");
@@ -64,8 +72,39 @@ export default function PatoExperience() {
     return () => {
       cancelled = true;
       window.clearTimeout(start);
+      window.clearTimeout(hintTimer);
       api?.dispose();
       apiRef.current = null;
+    };
+  }, []);
+
+  // Teclas acesas na dica enquanto estão apertadas.
+  useEffect(() => {
+    const CODES: Record<string, string> = {
+      KeyW: "W", ArrowUp: "W", KeyA: "A", ArrowLeft: "A",
+      KeyS: "S", ArrowDown: "S", KeyD: "D", ArrowRight: "D", Space: "Espaço",
+    };
+    const update = (code: string, on: boolean) => {
+      const k = CODES[code];
+      if (!k) return;
+      setPressed((prev) => {
+        if (prev.has(k) === on) return prev;
+        const next = new Set(prev);
+        if (on) next.add(k);
+        else next.delete(k);
+        return next;
+      });
+    };
+    const down = (e: KeyboardEvent) => update(e.code, true);
+    const up = (e: KeyboardEvent) => update(e.code, false);
+    const blur = () => setPressed(new Set());
+    window.addEventListener("keydown", down);
+    window.addEventListener("keyup", up);
+    window.addEventListener("blur", blur);
+    return () => {
+      window.removeEventListener("keydown", down);
+      window.removeEventListener("keyup", up);
+      window.removeEventListener("blur", blur);
     };
   }, []);
 
@@ -103,13 +142,20 @@ export default function PatoExperience() {
       {phase === "controle" && (
         <div className="pato-top">
           <h1 className="pato-title">Faça o pato marcar um gol</h1>
-          <div className="pato-keys" aria-label="setas ou WASD para andar, espaço para chutar">
-            <span className="pato-key">←</span>
-            <span className="pato-key">↑</span>
-            <span className="pato-key">↓</span>
-            <span className="pato-key">→</span>
-            <span className="pato-key pato-key-wide">espaço</span>
+          <div className="pato-keys" aria-label="WASD andar, Espaço chutar">
+            {["W", "A", "S", "D"].map((k) => (
+              <span key={k} className={`pato-key${pressed.has(k) ? " is-down" : ""}`}>
+                {k}
+              </span>
+            ))}
+            <span className="pato-key-label">andar</span>
+            <span className="pato-key-sep">·</span>
+            <span className={`pato-key pato-key-wide${pressed.has("Espaço") ? " is-down" : ""}`}>
+              Espaço
+            </span>
+            <span className="pato-key-label">chutar</span>
           </div>
+          <p className={`pato-hint${hint ? " is-on" : ""}`}>{hint ?? " "}</p>
         </div>
       )}
 
