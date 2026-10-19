@@ -19,7 +19,6 @@ export default function PatoExperience() {
   const [canGiveSight, setCanGiveSight] = useState(false);
   const [layer, setLayer] = useState(0);
   const [toast, setToast] = useState<string | null>(null);
-  const [hint, setHint] = useState<string | null>(null);
   const [pressed, setPressed] = useState<Set<string>>(() => new Set());
 
   const setPhase = (p: Phase) => {
@@ -30,7 +29,6 @@ export default function PatoExperience() {
   useEffect(() => {
     let api: Api | null = null;
     let cancelled = false;
-    let hintTimer = 0;
     // O StrictMode monta, desmonta e monta de novo em sequência: o atraso
     // evita dois motores disputando o mesmo canvas.
     const start = window.setTimeout(async () => {
@@ -39,11 +37,6 @@ export default function PatoExperience() {
           canvas: canvasRef.current!,
           visionCanvas: visionRef.current!,
           onProgress: (msg: string | null) => setProgress(msg),
-          onHint: (msg: string) => {
-            setHint(msg);
-            window.clearTimeout(hintTimer);
-            hintTimer = window.setTimeout(() => setHint(null), 1600);
-          },
           onGoal: () => {
             const p = phaseRef.current;
             if (p === "controle") setPhase("gol");
@@ -72,7 +65,6 @@ export default function PatoExperience() {
     return () => {
       cancelled = true;
       window.clearTimeout(start);
-      window.clearTimeout(hintTimer);
       api?.dispose();
       apiRef.current = null;
     };
@@ -155,7 +147,6 @@ export default function PatoExperience() {
             </span>
             <span className="pato-key-label">chutar</span>
           </div>
-          <p className={`pato-hint${hint ? " is-on" : ""}`}>{hint ?? " "}</p>
         </div>
       )}
 

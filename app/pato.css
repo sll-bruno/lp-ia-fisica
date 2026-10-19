@@ -91,17 +91,7 @@
   color: var(--pato-muted);
 }
 
-.pato-hint {
-  min-height: 1.4em;
-  font-size: 14px;
-  color: var(--pato-ink);
-  opacity: 0;
-  transition: opacity 0.2s;
-}
 
-.pato-hint.is-on {
-  opacity: 1;
-}
 
 .pato-center {
   position: absolute;

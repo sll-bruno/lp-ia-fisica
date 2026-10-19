@@ -19,12 +19,13 @@ estado no console.
 
 ## Fluxo
 
-1. **Controle**: WASD andam (setas também), Espaço chuta com o pé do lado da
-   bola (chute cego de 0,5 s). O chute só sai com a bola perto: o pato para,
-   se firma e chuta; longe, aparece "chegue perto da bola". A bola começa um
-   pouco fora do alcance.
+1. **Controle**: WASD andam (setas também), Espaço chuta na hora com o pé do
+   lado da bola (chute cego de 0,5 s), perto ou longe, parado ou andando.
+   Chutando andando ele costuma cair e se levanta sozinho, de propósito: antes
+   de aprender, o pato cai. A bola começa um pouco fora do alcance.
 2. **Gol**: mensagem "Quem marcou foi você…" e botão "Solte o controle".
-3. **Solto**: comandos aleatórios e chutes no vazio; aparece "Dar visão ao pato".
+3. **Solto**: comandos aleatórios e chutes no vazio na hora (também cai às
+   vezes); aparece "Dar visão ao pato".
 4. **Perceber**: janela com a câmera da cabeça (câmera `head_camera` do MJCF,
    128×96), controle deslizante pixels → bordas (Sobel em shader) → bola
    (máscara de cor + caixa). O pato acha a bola só pela imagem: centróide e
@@ -37,9 +38,10 @@ estado no console.
   sem cair. Fora da faixa de treino, estável nos testes.
 - **Zona morta**: parada, a política ignora comandos fracos. O modo solto e o
   controlador da visão usam comandos fortes e dão um empurrão quando o pato empaca.
-- **Chute parado**: todo chute passa por uma preparação (comando zero até o pato
-  ficar firme) e depois 1 s de pausa (o oficial usa 0,4 s). No modo visão a
-  cabeça volta ao neutro antes do chute: inclinada, o chute direito derrubava.
+- **Chute parado, só no modo visão**: o chute passa por uma preparação (comando
+  zero até o pato ficar firme), pra percepção ficar legível. A cabeça volta ao
+  neutro antes do chute: inclinada, o chute direito derrubava. Em todos os
+  modos há 1 s de pausa depois do chute (o oficial usa 0,4 s).
 - **Impulso no chute**: parado, o pé só alcança ~11 cm. Se o pé toca a bola, ela
   sai com pelo menos 1,4 m/s; se a bola estava ao alcance e o pé passou raspando,
   ela recebe o mesmo impulso no passo em que o pé está mais à frente.
@@ -61,3 +63,10 @@ políticas de pollen-robotics/microduck e microduck_rl (Apache-2.0).
 - `lib/pato/engine.js`: laço de controle portado de `app/src/game/game.js`
   (observação de 61 dimensões, 50 Hz, recuperação de queda); arena, gol, modos,
   visão e controlador são novos.
+
+## Ideia pra depois: modo aprender (não implementado)
+
+Mostrar o treino por reforço: no começo o pato cai muito (como no controle e
+no modo solto, chutando andando) e, ao longo do treino, cai cada vez menos.
+Isso também explica por que no modo visão ele já não cai: ali ele para, se
+firma e chuta, que é o comportamento "depois do treino".
