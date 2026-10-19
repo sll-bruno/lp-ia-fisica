@@ -360,3 +360,63 @@
   width: 12px;
   vertical-align: 2px;
 }
+
+.pato-toggle {
+  display: flex;
+  gap: 6px;
+}
+
+.pato-toggle button {
+  font: inherit;
+  font-size: 14px;
+  padding: 7px 14px;
+  border: 1px solid var(--pato-ink);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--pato-ink);
+  cursor: pointer;
+}
+
+.pato-toggle button.is-on {
+  background: var(--pato-ink);
+  color: var(--pato-bg);
+}
+
+.pato-toggle button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.pato-geracoes {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  height: 80px;
+}
+
+.pato-geracao {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 22px;
+}
+
+.pato-geracao-barra {
+  display: block;
+  width: 14px;
+  background: var(--pato-ink);
+  opacity: 0.55;
+  border-radius: 2px;
+}
+
+.pato-geracao.is-now .pato-geracao-barra {
+  background: #e8752a;
+  opacity: 1;
+}
+
+.pato-geracao-n {
+  font-size: 12px;
+  color: var(--pato-muted);
+  min-height: 1em;
+}

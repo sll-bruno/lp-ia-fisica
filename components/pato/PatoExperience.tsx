@@ -5,11 +5,14 @@ import { createPato, VISION_W, VISION_H } from "@/lib/pato/engine";
 
 type Phase =
   | "carregando" | "controle" | "gol" | "solto" | "visao"
-  | "gancho" | "odometria" | "laser" | "jogar" | "decidir";
-type Mode = "solto" | "visao" | "gancho" | "odometria" | "laser" | "jogar" | "decidir";
+  | "gancho" | "odometria" | "laser" | "jogar" | "decidir" | "mover" | "aprender" | "patins";
+type Mode = "solto" | "visao" | "gancho" | "odometria" | "laser" | "jogar" | "decidir" | "mover" | "aprender" | "patins";
+type MoverStatus = { equilibrio: boolean; quedas: { com: number; sem: number }; pronto: boolean };
+type AprenderStatus = { geracao: number; geracoes: number; sigma: number; quedas: number[]; fim: boolean; progresso: number };
 // Atalhos pra revisão: ?modo=solto, ?modo=visao, ?modo=localizar.
 const SHORTCUTS: Record<string, Mode> = {
   solto: "solto", visao: "visao", localizar: "gancho", decidir: "decidir",
+  mover: "mover", aprender: "aprender", patins: "patins",
 };
 type Api = NonNullable<Awaited<ReturnType<typeof createPato>>>;
 
@@ -21,6 +24,10 @@ export default function PatoExperience() {
   const apiRef = useRef<Api | null>(null);
   const phaseRef = useRef<Phase>("carregando");
   const [phase, setPhaseState] = useState<Phase>("carregando");
+  // O final troca de corpo: um motor novo com o pato de patins.
+  const [variante, setVariante] = useState<"pernas" | "patins">(() =>
+    typeof window !== "undefined" && new URLSearchParams(window.location.search).get("modo") === "patins"
+      ? "patins" : "pernas");
   const [progress, setProgress] = useState<string | null>("preparando");
   const [failed, setFailed] = useState<string | null>(null);
   // Botão de avançar de cada fase aparece depois de um tempo nela.
@@ -28,6 +35,8 @@ export default function PatoExperience() {
   const [layer, setLayer] = useState(0);
   const [toast, setToast] = useState<string | null>(null);
   const [pressed, setPressed] = useState<Set<string>>(() => new Set());
+  const [moverSt, setMoverSt] = useState<MoverStatus | null>(null);
+  const [aprenderSt, setAprenderSt] = useState<AprenderStatus | null>(null);
 
   const setPhase = (p: Phase) => {
     phaseRef.current = p;
@@ -45,6 +54,7 @@ export default function PatoExperience() {
         const created = await createPato({
           canvas: canvasRef.current!,
           visionCanvas: visionRef.current!,
+          variante,
           onProgress: (msg: string | null) => setProgress(msg),
           onGoal: () => {
             const p = phaseRef.current;
@@ -59,7 +69,9 @@ export default function PatoExperience() {
         else if (created) {
           api = created;
           apiRef.current = created;
-          const modo = SHORTCUTS[new URLSearchParams(window.location.search).get("modo") ?? ""];
+          const modo = variante === "patins"
+            ? "patins"
+            : SHORTCUTS[new URLSearchParams(window.location.search).get("modo") ?? ""];
           if (modo) {
             created.setMode(modo);
             setPhase(modo);
@@ -76,7 +88,7 @@ export default function PatoExperience() {
       api?.dispose();
       apiRef.current = null;
     };
-  }, []);
+  }, [variante]);
 
   // Teclas acesas na dica enquanto estão apertadas.
   useEffect(() => {
@@ -111,6 +123,7 @@ export default function PatoExperience() {
   useEffect(() => {
     const wait: Partial<Record<Phase, number>> = {
       solto: 3500, visao: 9000, gancho: 7000, odometria: 9000, laser: 9000, jogar: 12000,
+      decidir: 20000, mover: 15000,
     };
     const ms = wait[phase];
     if (ms === undefined) return;
@@ -122,11 +135,23 @@ export default function PatoExperience() {
     apiRef.current?.setVisionLayer(layer);
   }, [layer, phase]);
 
+  // Mover e aprender: placar lido do motor.
+  useEffect(() => {
+    if (phase !== "mover" && phase !== "aprender") return;
+    const id = window.setInterval(() => {
+      const api = apiRef.current;
+      if (!api) return;
+      if (phase === "mover") setMoverSt(api.moverStatus());
+      else setAprenderSt(api.aprenderStatus());
+    }, 300);
+    return () => window.clearInterval(id);
+  }, [phase]);
+
   // Embaixo de cada texto a sala vira papel (Percepcao.reservar, até 4).
   useEffect(() => {
     const els = [...document.querySelectorAll<HTMLElement>("[data-reserva]")];
     apiRef.current?.reservar(els);
-  }, [phase, canAdvance, toast]);
+  }, [phase, canAdvance, toast, aprenderSt?.fim]);
 
   const go = (m: Mode) => {
     apiRef.current?.setMode(m);
@@ -139,6 +164,8 @@ export default function PatoExperience() {
     odometria: ["laser", "Ligar o laser"],
     laser: ["jogar", "Deixar ele jogar"],
     jogar: ["decidir", "Ensinar o pato a escolher o caminho"],
+    decidir: ["mover", "E se alguém empurrar?"],
+    mover: ["aprender", "Quem ensinou?"],
   };
   const next = NEXT[phase];
   const showsVision = phase === "visao" || phase === "gancho" || phase === "jogar";
@@ -312,6 +339,123 @@ export default function PatoExperience() {
             </p>
           </aside>
         </>
+      )}
+
+      {phase === "mover" && (
+        <>
+          <div data-reserva className="pato-top pato-top-interactive">
+            <h1 className="pato-title pato-title-small">O plano está certo. Mas e se alguém empurrar?</h1>
+            <div className="pato-toggle" role="group" aria-label="equilíbrio">
+              <button
+                className={moverSt?.equilibrio !== false ? "is-on" : ""}
+                onClick={() => apiRef.current?.setEquilibrio(true)}
+              >
+                com equilíbrio
+              </button>
+              <button
+                className={moverSt?.equilibrio === false ? "is-on" : ""}
+                disabled={!moverSt?.pronto}
+                onClick={() => apiRef.current?.setEquilibrio(false)}
+              >
+                sem equilíbrio
+              </button>
+            </div>
+            <p className="pato-muted pato-small">
+              clique e arraste o pato pra empurrar · quedas: com equilíbrio {moverSt?.quedas.com ?? 0},
+              sem {moverSt?.quedas.sem ?? 0}
+            </p>
+          </div>
+          <div data-reserva className="pato-left">
+            <p>
+              O ouvido interno sente a inclinação, e o cerebelo corrige o passo em milissegundos, sem
+              você perceber. Os dois IMUs do pato são o ouvido interno dele.
+            </p>
+            <p className="pato-muted pato-small">
+              Sem equilíbrio: a mesma marcha, gravada da política e repetida sem olhar os sensores.
+              Com equilíbrio: a política lendo os IMUs a cada passo.
+            </p>
+          </div>
+          <aside data-reserva className="pato-ficha">
+            <p>
+              <span className="pato-ficha-label">pra estudar</span> controle em malha fechada, PID,
+              pêndulo invertido
+            </p>
+            <p>
+              <span className="pato-ficha-label">projeto opcional</span> equilibrar um pêndulo
+              invertido no seu simulador
+            </p>
+          </aside>
+          {canAdvance && (
+            <p data-reserva className="pato-legend">
+              Mas quem ensinou o pato a se equilibrar? Ninguém programou isso.
+            </p>
+          )}
+        </>
+      )}
+
+      {phase === "aprender" && aprenderSt && (
+        <>
+          <div data-reserva className="pato-top">
+            <h1 className="pato-title pato-title-small">
+              {aprenderSt.fim
+                ? "Ninguém programou o passo. Ele aprendeu tentando."
+                : `Geração ${aprenderSt.geracao + 1} de ${aprenderSt.geracoes}`}
+            </h1>
+            <div className="pato-geracoes" aria-label="quedas por geração">
+              {aprenderSt.quedas.map((q, i) => (
+                <div key={i} className={`pato-geracao${i === aprenderSt.geracao && !aprenderSt.fim ? " is-now" : ""}`}>
+                  <span className="pato-geracao-barra" style={{ height: `${Math.min(60, q * 12 + 2)}px` }} />
+                  <span className="pato-geracao-n">{i <= aprenderSt.geracao || aprenderSt.fim ? q : ""}</span>
+                </div>
+              ))}
+            </div>
+            <p className="pato-muted pato-small">quedas por geração</p>
+          </div>
+          {aprenderSt.fim && (
+            <div className="pato-bottom">
+              <button
+                className="pato-button"
+                onClick={() => {
+                  setPhase("carregando");
+                  setProgress("trocando de corpo");
+                  setVariante("patins");
+                }}
+              >
+                Mesmo método, corpo novo
+              </button>
+            </div>
+          )}
+          <div data-reserva className="pato-left">
+            <p>
+              Quando algo dá melhor do que o esperado, neurônios de dopamina disparam: é um sinal de
+              erro de previsão de recompensa (Schultz, 1997). O aprendizado por reforço usa a mesma
+              ideia.
+            </p>
+            <p className="pato-muted pato-small">
+              Aproximação: aqui o treino é simulado com ruído na política final. O treino real leva
+              horas em GPU.
+            </p>
+          </div>
+          <aside data-reserva className="pato-ficha">
+            <p>
+              <span className="pato-ficha-label">pra estudar</span> aprendizado por reforço (o curso
+              Deep RL do Hugging Face) e o repositório microduck_rl
+            </p>
+            <p>
+              <span className="pato-ficha-label">projeto opcional</span> treinar o seu pato no seu
+              simulador
+            </p>
+          </aside>
+        </>
+      )}
+
+      {phase === "patins" && (
+        <div data-reserva className="pato-top">
+          <h1 className="pato-title pato-title-small">
+            Ninguém programou o pato pra patinar. Ele aprendeu do mesmo jeito, em simulação.
+          </h1>
+          {keysHint}
+        </div>
       )}
 
       {localizing && phase !== "gancho" && (

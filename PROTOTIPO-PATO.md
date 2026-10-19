@@ -66,6 +66,27 @@ estado no console.
    livro, o chinelo e a caixa; a rota se refaz a cada 0,4 s com o que o pato
    já viu. Rota em tinta escura, ponto perseguido em laranja.
 
+7. **Mover** (`?modo=mover`): o pato anda devagar em círculo. Clicar e
+   arrastar no pato aplica uma **força externa no tronco** (`xfrc_applied`,
+   mola até o ponto do chão sob o cursor, 12 N/m, limitada a 3 N), **só
+   enquanto o visitante arrasta**. É a única força aplicada no pato no
+   protótipo. Chave "com equilíbrio" / "sem equilíbrio": sem equilíbrio, o
+   motor toca em malha aberta um ciclo da marcha gravado da própria política
+   (o atraso em que as 14 ações mais se repetem), sem ler sensor nenhum; com
+   equilíbrio, é a política lendo os IMUs a cada passo. Medido: sem
+   equilíbrio, caiu com o primeiro empurrão de ~0,6 N; com equilíbrio,
+   aguentou 1,2 e 3 N (caiu uma vez em 1,8 N).
+8. **Aprender** (`?modo=aprender`): **aproximação, não é treino**. Seis
+   "gerações" de 10 s com a mesma política final e ruído correlacionado no
+   tempo somado às ações (σ = 1,0 rad na geração 1, metade a cada geração).
+   Um placar conta as quedas por geração (num teste: 3, 2, 0, 0, 1, 1; o
+   ruído é aleatório e a contagem varia).
+9. **Patins** (`?modo=patins`): "Mesmo método, corpo novo" troca o motor
+   pelo pato com patins (`robot_allcollisions_rollers.xml`,
+   `kinematics_rollers.json`, `BEST_roller.onnx`, do simulador oficial).
+   WASD com os limites do runtime (0,6 / -0,5 m/s, giro 0,3 rad/s). Sem
+   política de levantar: se cai, volta pro início depois de 1 s.
+
 ## A sala de casa
 
 A cena visual é a sala aprovada pela thread de design, em `lib/cena/`
