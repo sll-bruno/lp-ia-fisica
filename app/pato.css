@@ -420,3 +420,24 @@
   color: var(--pato-muted);
   min-height: 1em;
 }
+
+/* Texto do modo à esquerda e título no topo: o título começa depois da
+   coluna da esquerda, pra não se sobreporem em telas médias. */
+.pato-left {
+  max-width: min(400px, 34vw);
+}
+
+.pato-root:has(.pato-left) .pato-top {
+  padding-left: calc(44px + min(400px, 34vw));
+}
+
+@media (max-width: 720px) {
+  .pato-left {
+    max-width: none;
+  }
+  .pato-root:has(.pato-left) .pato-top {
+    padding-left: 16px;
+    top: auto;
+    bottom: 96px;
+  }
+}
