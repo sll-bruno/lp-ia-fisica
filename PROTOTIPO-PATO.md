@@ -60,6 +60,15 @@ políticas de pollen-robotics/microduck e microduck_rl (Apache-2.0).
 
 - `public/pato/robot/`: MJCF `robot_allcollisions.xml`, `kinematics.json`,
   `microduck.glb`, STLs.
+
+**Atenção, malhas 3D:** os STLs do Microduck (e o `microduck.glb`, que é
+derivado deles) são **CC BY-NC-SA 4.0** (Creative Commons
+Atribuição-NãoComercial-CompartilhaIgual), não Apache-2.0. Ver
+`public/pato/LICENSE-MODELS-microduck_rl.md`. Pode usar em projeto não
+comercial, creditando a Pollen Robotics com link para
+https://github.com/pollen-robotics/microduck_rl e para a licença. Uso
+comercial exigiria falar com a Pollen. O MJCF, as políticas e o código seguem
+Apache-2.0.
 - `public/pato/policies/`: andar, chute esquerdo/direito, levantar.
 - `lib/pato/duck.js`: rig portado de `app/src/game/duck.js`.
 - `lib/pato/engine.js`: laço de controle portado de `app/src/game/game.js`
