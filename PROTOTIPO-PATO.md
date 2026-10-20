@@ -123,10 +123,12 @@ câmera da cabeça usa o mesmo tom da Percepcao (ACES, exposição 1,1).
   zero até o pato ficar firme), pra percepção ficar legível. A cabeça volta ao
   neutro antes do chute: inclinada, o chute direito derrubava. Em todos os
   modos há 1 s de pausa depois do chute (o oficial usa 0,4 s).
-- **Sem impulso no chute** (decisão do Bruno): o chute é só física, pé contra
-  bola. Medido com a bola de tênis, pato parado: só pega com a bola ~9 cm à
-  frente e ~4 cm pro lado do pé (0,54 m); a 11–15 cm, ou centrada, quase
-  nada (0 a 0,14 m). Andando e chutando com a bola centrada: 0 m em 6 de 6.
+- **Impulso no chute** (o Bruno pediu pra manter): parado, o pé da política
+  só alcança a bola de tênis numa janela estreita (~9 cm à frente, ~4 cm pro
+  lado do pé; aí ela anda 0,54 m) e quase nada fora dela. Se o pé toca a
+  bola, ela sai com pelo menos 1,4 m/s; se a bola estava ao alcance e o pé
+  passou raspando, ela recebe o mesmo impulso no passo em que o pé está mais
+  à frente. Não é física: é velocidade escrita na bola, sem reação no pé.
 - **Bola presa**: fora do modo controle, bola parada colada na parede por 6 s
   volta pro campo.
 
