@@ -503,3 +503,25 @@
   background: var(--pato-ink);
   color: var(--pato-bg);
 }
+
+.pato-placar {
+  font-weight: 500;
+  color: var(--pato-ink);
+}
+
+.pato-camada {
+  margin: 0 3px;
+  color: var(--pato-muted);
+}
+
+.pato-camada.is-on {
+  color: var(--pato-ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* Câmera da cabeça em 240x160 (3:2). */
+.pato-vision-canvas {
+  height: auto;
+  aspect-ratio: 3 / 2;
+}

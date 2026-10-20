@@ -8,10 +8,13 @@ type Phase =
   | "gancho" | "odometria" | "laser" | "jogar" | "decidir" | "mover" | "aprender" | "patins";
 type Mode = "solto" | "visao" | "gancho" | "odometria" | "laser" | "jogar" | "decidir" | "mover" | "aprender" | "patins";
 type MoverStatus = { equilibrio: boolean; quedas: { com: number; sem: number }; pronto: boolean };
-type AprenderStatus = { geracao: number; geracoes: number; sigma: number; quedas: number[]; fim: boolean; progresso: number };
+type AprenderStatus = {
+  geracao: number; geracoes: number; sigma: number; quedas: number[]; fim: boolean; progresso: number;
+  alcance: number[]; distancia: number;
+};
 // Atalhos pra revisão: ?modo=solto, ?modo=visao, ?modo=localizar.
 const SHORTCUTS: Record<string, Mode> = {
-  solto: "solto", visao: "visao", localizar: "gancho", decidir: "decidir",
+  solto: "solto", visao: "visao", localizar: "odometria", decidir: "decidir",
   mover: "mover", aprender: "aprender", patins: "patins",
 };
 type Api = NonNullable<Awaited<ReturnType<typeof createPato>>>;
@@ -144,6 +147,22 @@ export default function PatoExperience() {
     apiRef.current?.setVisionLayer(layer);
   }, [layer, phase]);
 
+  // Placar do modo (o motor escreve ao desenhar as marcas).
+  const [placar, setPlacar] = useState("");
+  useEffect(() => {
+    if (phase === "carregando") return;
+    const id = window.setInterval(() => setPlacar(apiRef.current?.placar() ?? ""), 300);
+    return () => window.clearInterval(id);
+  }, [phase]);
+
+  // Visão: a janela da câmera da cabeça passa sozinha por pixels, bordas e
+  // bola, 2,6 s cada.
+  useEffect(() => {
+    if (phase !== "visao") return;
+    const id = window.setInterval(() => setLayer((l) => (Math.round(l) + 1) % 3), 2600);
+    return () => window.clearInterval(id);
+  }, [phase]);
+
   // Mover e aprender: placar lido do motor.
   useEffect(() => {
     if (phase !== "mover" && phase !== "aprender") return;
@@ -168,11 +187,11 @@ export default function PatoExperience() {
   };
   const NEXT: Partial<Record<Phase, [Mode, string]>> = {
     solto: ["visao", "Dar visão ao pato"],
-    visao: ["gancho", "Ensinar o pato a se localizar"],
-    gancho: ["odometria", "Contar os passos"],
+    // Percurso em 7 etapas: gol (com o solto no fim), visão, localizar (2
+    // passos), decidir, mover, aprender (com os patins no fim).
+    visao: ["odometria", "Ensinar o pato a se localizar"],
     odometria: ["laser", "Ligar o laser"],
-    laser: ["jogar", "Deixar ele jogar"],
-    jogar: ["decidir", "Ensinar o pato a escolher o caminho"],
+    laser: ["decidir", "Ensinar o pato a escolher o caminho"],
     decidir: ["mover", "E se alguém empurrar?"],
     mover: ["aprender", "Quem ensinou?"],
   };
@@ -270,6 +289,11 @@ export default function PatoExperience() {
 
       {phase === "odometria" && (
         <>
+          <div data-reserva className="pato-top">
+            <h1 className="pato-title pato-title-small">
+              Ele vê a bola. Mas não sabe onde está, nem onde fica o gol.
+            </h1>
+          </div>
           <div data-reserva className="pato-left">
             <p>
               Ande de olhos fechados até a porta e você erra do mesmo jeito. Seu cérebro também
@@ -295,10 +319,10 @@ export default function PatoExperience() {
             <p className="pato-muted pato-small">arraste o pato pra sequestrá-lo</p>
           </div>
           <p data-reserva className="pato-legend">
-            <span className="pato-swatch pato-swatch-ray" /> o laser agora ·{" "}
-            <span className="pato-swatch pato-swatch-map" /> o que ele já tocou ·{" "}
-            <span className="pato-swatch pato-swatch-part" /> palpites de onde ele está ·{" "}
-            <span className="pato-swatch pato-swatch-ghost" /> o melhor palpite
+            O LiDAR gira e desenha o mapa no chão. Cada tracinho é um palpite de onde o pato está,
+            e os que não batem com o mapa somem.
+            <br />
+            <strong className="pato-placar">{placar}</strong>
             <br />
             Localização simplificada: filtro de partículas em 2D com o mapa da sala já conhecido,
             não um SLAM completo.
@@ -331,9 +355,10 @@ export default function PatoExperience() {
             <p className="pato-muted pato-small">arraste o livro, o chinelo ou a caixa</p>
           </div>
           <p data-reserva className="pato-legend">
-            <span className="pato-swatch pato-swatch-map" /> o que os lasers acham ocupado ·{" "}
-            <span className="pato-swatch pato-swatch-route" /> a rota ·{" "}
-            <span className="pato-swatch pato-swatch-ray" /> pra onde ele vai agora
+            O mapa vira uma grade. O pato testa casas até achar o caminho mais curto pra trás da
+            bola. Arraste o livro.
+            <br />
+            <strong className="pato-placar">{placar}</strong>
             <br />
             Planejamento simplificado: A* numa grade 2D de 4 cm, com o pato tratado como um círculo
             e sem prever como ele vira.
@@ -395,11 +420,18 @@ export default function PatoExperience() {
               invertido no seu simulador
             </p>
           </aside>
-          {canAdvance && (
-            <p data-reserva className="pato-legend">
-              Mas quem ensinou o pato a se equilibrar? Ninguém programou isso.
-            </p>
-          )}
+          <p data-reserva className="pato-legend">
+            O polígono é onde os pés tocam o chão. Se a bolinha laranja, o centro de massa, sai
+            dele, o pato cai.
+            <br />
+            <strong className="pato-placar">{placar}</strong>
+            {canAdvance && (
+              <>
+                <br />
+                Mas quem ensinou o pato a se equilibrar? Ninguém programou isso.
+              </>
+            )}
+          </p>
         </>
       )}
 
@@ -411,15 +443,9 @@ export default function PatoExperience() {
                 ? "Ninguém programou o passo. Ele aprendeu tentando."
                 : `Geração ${aprenderSt.geracao + 1} de ${aprenderSt.geracoes}`}
             </h1>
-            <div className="pato-geracoes" aria-label="quedas por geração">
-              {aprenderSt.quedas.map((q, i) => (
-                <div key={i} className={`pato-geracao${i === aprenderSt.geracao && !aprenderSt.fim ? " is-now" : ""}`}>
-                  <span className="pato-geracao-barra" style={{ height: `${Math.min(60, q * 12 + 2)}px` }} />
-                  <span className="pato-geracao-n">{i <= aprenderSt.geracao || aprenderSt.fim ? q : ""}</span>
-                </div>
-              ))}
-            </div>
-            <p className="pato-muted pato-small">quedas por geração</p>
+            <p className="pato-placar">{placar}</p>
+            <Curva alcance={aprenderSt.alcance} distancia={aprenderSt.distancia} atual={aprenderSt.fim ? -1 : aprenderSt.geracao} />
+            <p className="pato-muted pato-small">quão longe cada geração chegou rumo à bola</p>
           </div>
           {aprenderSt.fim && (
             <div className="pato-bottom">
@@ -435,6 +461,10 @@ export default function PatoExperience() {
               </button>
             </div>
           )}
+          <p data-reserva className="pato-legend">
+            Cada fantasma é uma tentativa que caiu. A cada geração ele chega mais longe, até alcançar
+            a bola.
+          </p>
           <div data-reserva className="pato-left">
             <p>
               Quando algo dá melhor do que o esperado, neurônios de dopamina disparam: é um sinal de
@@ -502,8 +532,15 @@ export default function PatoExperience() {
 
       <div className="pato-vision" hidden={!showsVision}>
         <div className="pato-vision-head">
-          <span>câmera da cabeça</span>
-          <span className="pato-muted">arraste a bola</span>
+          <span>
+            câmera da cabeça ·{" "}
+            {LAYERS.map((l, i) => (
+              <span key={l}>
+                {i > 0 && "|"}
+                <span className={i === layerIdx ? "pato-camada is-on" : "pato-camada"}>{l}</span>
+              </span>
+            ))}
+          </span>
         </div>
         <canvas
           ref={visionRef}
@@ -511,28 +548,10 @@ export default function PatoExperience() {
           height={VISION_H}
           className="pato-vision-canvas"
         />
-        <input
-          type="range"
-          min={0}
-          max={2}
-          step={0.01}
-          value={layer}
-          onChange={(e) => setLayer(Number(e.target.value))}
-          aria-label="camada da visão"
-          className="pato-range"
-        />
-        <div className="pato-layers">
-          {LAYERS.map((l, i) => (
-            <button
-              key={l}
-              className={i === layerIdx ? "is-on" : ""}
-              onClick={() => setLayer(i)}
-            >
-              {l}
-            </button>
-          ))}
-        </div>
         <p className="pato-note">
+          A câmera da cabeça entrega só pixels. O pato acha as bordas e, nas bordas, a bola. Arraste
+          a bola.
+          <br />
           Visão simplificada: bordas e cor, sem rede neural. O pato procura o amarelo da bola de tênis, centraliza e
           anda até ele.
         </p>
@@ -575,5 +594,24 @@ function Joystick({ onMove, onKick }: { onMove: (x: number, y: number) => void; 
         </button>
       )}
     </div>
+  );
+}
+
+// Curva pequena (120x28): quão longe cada geração chegou rumo à bola.
+function Curva({ alcance, distancia, atual }: { alcance: number[]; distancia: number; atual: number }) {
+  const n = alcance.length;
+  const pts = alcance.map((a, i) => [4 + (i * 112) / Math.max(1, n - 1), 24 - (Math.max(0, a) / (distancia || 1)) * 20]);
+  return (
+    <svg width="120" height="28" viewBox="0 0 120 28" aria-label="alcance por geração">
+      <polyline
+        fill="none"
+        stroke="#232220"
+        strokeWidth="1.2"
+        points={pts.slice(0, atual < 0 ? n : atual + 1).map((p) => p.join(",")).join(" ")}
+      />
+      {pts.map(([x, y], i) => (
+        <circle key={i} cx={x} cy={y} r={i === atual ? 2.6 : 1.6} fill={i === atual ? "#d9692b" : "#232220"} opacity={atual >= 0 && i > atual ? 0.15 : 1} />
+      ))}
+    </svg>
   );
 }

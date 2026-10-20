@@ -87,6 +87,38 @@ estado no console.
    WASD com os limites do runtime (0,6 / -0,5 m/s, giro 0,3 rad/s). Sem
    política de levantar: se cai, volta pro início depois de 1 s.
 
+## Percurso (7 etapas) e camadas "o que o pato vê"
+
+Gol (com o solto no fim) → visão → localizar (contar os passos, ligar o
+laser) → decidir (vai até a bola e chuta pro gol) → mover → aprender (com os
+patins no fim). O passo "jogar" do localizar saiu do percurso (`?modo=localizar`
+abre na odometria).
+
+As camadas seguem o estudo da thread de design, com os dados reais de cada
+mecânica, desenhadas por `lib/pato/marcas.js` (InstancedMesh de quads no
+chão, formas ponto/anel/quad; um conjunto no chão, que some atrás dos
+móveis, e um em raio X): tinta pro que o pato sabe, laranja pro que acontece
+agora.
+- Visão: janela da câmera da cabeça (240x160, o pato escondido) alternando
+  pixels (grade 48x32), bordas (Sobel, tinta sobre papel) e bola (anel laranja
+  em volta da mancha achada), 2,6 s cada; campo de visão tracejado no chão.
+- Localizar: impactos reais do mj_ray como pontos de 18 mm (até 2200), o feixe
+  laranja girando com rastro de 24 raios (a última varredura mostrada em
+  sequência), as partículas com traço de direção, anel laranja quando
+  converge; placar "N palpites ainda possíveis" / "posição encontrada".
+- Decidir: a grade (ponto = chão visto livre, quadrado = ocupado), as casas
+  testadas pelo A* aparecendo em ordem (1,6 s) e a rota em laranja (0,8 s),
+  anel no ponto de chute, tracejado bola→gol; placar com casas testadas e
+  comprimento.
+- Mover: polígono de apoio (casco convexo dos cantos dos geoms de colisão dos
+  pés encostados no chão) e centro de massa real (`subtree_com` do tronco), em
+  raio X, com fio de prumo; seta laranja do empurrão.
+- Aprender: cada tentativa sai do mesmo ponto rumo à bola; caiu, recomeça.
+  Fantasmas brancos das últimas 4 quedas na pose da queda, traço do início
+  até onde caiu, curva de quão longe cada geração chegou.
+- Câmera: enquadramento por modo (alto pro mapa e a grade, perto dos pés pro
+  equilíbrio), voo de 1,4 s com smoothstep, cancelado se o visitante girar.
+
 ## A sala de casa
 
 A cena visual é a sala aprovada pela thread de design, em `lib/cena/`
