@@ -95,7 +95,9 @@ A cena visual é a sala aprovada pela thread de design, em `lib/cena/`
 não usa react-three-fiber). O motor monta `criarCena()` na própria cena e
 desenha cada quadro com `Percepcao.render`, seguindo o tronco do pato.
 
-A física da sala está em `lib/pato/sala-fisica.js`: caixas e cilindros
+Colisão (decisão do Bruno): paredes e rack, mais sofá, puff e vaso (ajudam
+o laser a localizar o pato). Os chinelos do gol não colidem; são só
+marcação. A física da sala está em `lib/pato/sala-fisica.js`: caixas e cilindros
 aproximando paredes, rack, sofá, puff, vaso, pilha de livros, caneca, tênis
 e os dois chinelos do gol, mais dois limites invisíveis nos lados abertos.
 O rack é fechado até o chão (o vão de 11 cm sob ele engoliria a bola). O
@@ -121,13 +123,25 @@ câmera da cabeça usa o mesmo tom da Percepcao (ACES, exposição 1,1).
   zero até o pato ficar firme), pra percepção ficar legível. A cabeça volta ao
   neutro antes do chute: inclinada, o chute direito derrubava. Em todos os
   modos há 1 s de pausa depois do chute (o oficial usa 0,4 s).
-- **Impulso no chute**: parado, o pé só alcança ~11 cm. Se o pé toca a bola, ela
-  sai com pelo menos 1,4 m/s; se a bola estava ao alcance e o pé passou raspando,
-  ela recebe o mesmo impulso no passo em que o pé está mais à frente.
+- **Sem impulso no chute** (decisão do Bruno): o chute é só física, pé contra
+  bola. Medido com a bola de tênis, pato parado: só pega com a bola ~9 cm à
+  frente e ~4 cm pro lado do pé (0,54 m); a 11–15 cm, ou centrada, quase
+  nada (0 a 0,14 m). Andando e chutando com a bola centrada: 0 m em 6 de 6.
 - **Bola presa**: fora do modo controle, bola parada colada na parede por 6 s
   volta pro campo.
 
+## Celular
+
+Em telas de toque aparecem um joystick (andar e girar) e um botão de chutar
+no lugar da dica de teclado. Botões e arrastes (bola, pato, objetos) usam
+pointer events, então funcionam com toque.
+
 ## Origem e licença
+
+Crédito no rodapé da página: "Microduck © Pollen Robotics. Modelos 3D sob
+CC BY-NC-SA 4.0; código e políticas sob Apache-2.0", com links. A LP é não
+comercial.
+
 
 Física, políticas e modelo vêm do simulador oficial
 [pollen-robotics/microduck-simulator](https://huggingface.co/spaces/pollen-robotics/microduck-simulator)

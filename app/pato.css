@@ -441,3 +441,65 @@
     bottom: 96px;
   }
 }
+
+.pato-credito {
+  position: absolute;
+  left: 50%;
+  bottom: 6px;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: calc(100% - 32px);
+  font-size: 10.5px;
+  color: var(--pato-muted);
+  text-align: center;
+  opacity: 0.8;
+}
+
+.pato-credito a {
+  color: inherit;
+}
+
+.pato-toque {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: 40px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  pointer-events: none;
+}
+
+.pato-joystick {
+  pointer-events: auto;
+  touch-action: none;
+  width: 128px;
+  height: 128px;
+  border-radius: 50%;
+  border: 1px solid var(--pato-line);
+  background: rgba(255, 255, 255, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pato-joystick-pino {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--pato-ink);
+  opacity: 0.75;
+}
+
+.pato-chute {
+  pointer-events: auto;
+  touch-action: none;
+  font: inherit;
+  font-size: 15px;
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  border: 1px solid var(--pato-ink);
+  background: var(--pato-ink);
+  color: var(--pato-bg);
+}

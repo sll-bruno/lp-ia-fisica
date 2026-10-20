@@ -36,6 +36,15 @@ export default function PatoExperience() {
   const [toast, setToast] = useState<string | null>(null);
   const [pressed, setPressed] = useState<Set<string>>(() => new Set());
   const [moverSt, setMoverSt] = useState<MoverStatus | null>(null);
+  // Tela de toque: joystick e botão de chute no lugar do teclado.
+  const [toqueAtivo, setToqueAtivo] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(pointer: coarse)");
+    const f = () => setToqueAtivo(mq.matches);
+    f();
+    mq.addEventListener("change", f);
+    return () => mq.removeEventListener("change", f);
+  }, []);
   const [aprenderSt, setAprenderSt] = useState<AprenderStatus | null>(null);
 
   const setPhase = (p: Phase) => {
@@ -171,7 +180,7 @@ export default function PatoExperience() {
   const showsVision = phase === "visao" || phase === "gancho" || phase === "jogar";
   const localizing = phase === "gancho" || phase === "odometria" || phase === "laser" || phase === "jogar";
   const decidindo = phase === "decidir";
-  const keysHint = (
+  const keysHint = toqueAtivo ? null : (
     <div className="pato-keys" aria-label="WASD andar, Espaço chutar">
       {["W", "A", "S", "D"].map((k) => (
         <span key={k} className={`pato-key${pressed.has(k) ? " is-down" : ""}`}>
@@ -192,6 +201,7 @@ export default function PatoExperience() {
   );
 
   const layerIdx = Math.round(layer);
+  const usaTeclado = phase === "controle" || phase === "odometria" || phase === "laser" || phase === "patins";
 
   return (
     <div className="pato-root">
@@ -473,6 +483,23 @@ export default function PatoExperience() {
 
       {toast && <p className="pato-toast">{toast}</p>}
 
+      {toqueAtivo && usaTeclado && (
+        <Joystick
+          onMove={(x, y) => apiRef.current?.setToque(x, y)}
+          onKick={phase === "controle" ? () => apiRef.current?.chutar() : undefined}
+        />
+      )}
+
+      <footer className="pato-credito">
+        Microduck ©{" "}
+        <a href="https://www.pollen-robotics.com" target="_blank" rel="noreferrer">Pollen Robotics</a>. Modelos 3D sob{" "}
+        <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="noreferrer">CC BY-NC-SA 4.0</a>; código e
+        políticas sob{" "}
+        <a href="https://www.apache.org/licenses/LICENSE-2.0" target="_blank" rel="noreferrer">Apache-2.0</a> (
+        <a href="https://github.com/pollen-robotics/microduck_rl" target="_blank" rel="noreferrer">microduck_rl</a>,{" "}
+        <a href="https://huggingface.co/spaces/pollen-robotics/microduck-simulator" target="_blank" rel="noreferrer">simulador</a>).
+      </footer>
+
       <div className="pato-vision" hidden={!showsVision}>
         <div className="pato-vision-head">
           <span>câmera da cabeça</span>
@@ -510,6 +537,43 @@ export default function PatoExperience() {
           anda até ele.
         </p>
       </div>
+    </div>
+  );
+}
+
+// Joystick virtual: arrastar o polegar no círculo anda (pra cima/baixo) e
+// gira (pros lados). Solta, o pato para.
+function Joystick({ onMove, onKick }: { onMove: (x: number, y: number) => void; onKick?: () => void }) {
+  const base = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState({ x: 0, y: 0 });
+  const R = 48;
+  const atualizar = (e: React.PointerEvent) => {
+    const r = base.current!.getBoundingClientRect();
+    let dx = e.clientX - (r.left + r.width / 2), dy = e.clientY - (r.top + r.height / 2);
+    const n = Math.hypot(dx, dy);
+    if (n > R) { dx *= R / n; dy *= R / n; }
+    setPos({ x: dx, y: dy });
+    onMove(dx / R, -dy / R);
+  };
+  const soltar = () => { setPos({ x: 0, y: 0 }); onMove(0, 0); };
+  return (
+    <div className="pato-toque">
+      <div
+        ref={base}
+        className="pato-joystick"
+        onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); atualizar(e); }}
+        onPointerMove={(e) => { if (e.currentTarget.hasPointerCapture(e.pointerId)) atualizar(e); }}
+        onPointerUp={soltar}
+        onPointerCancel={soltar}
+        aria-label="andar e girar"
+      >
+        <span className="pato-joystick-pino" style={{ transform: `translate(${pos.x}px, ${pos.y}px)` }} />
+      </div>
+      {onKick && (
+        <button className="pato-chute" onPointerDown={onKick} aria-label="chutar">
+          chutar
+        </button>
+      )}
     </div>
   );
 }
