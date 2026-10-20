@@ -10,7 +10,7 @@ type Mode = "solto" | "visao" | "gancho" | "odometria" | "laser" | "jogar" | "de
 type MoverStatus = { equilibrio: boolean; quedas: { com: number; sem: number }; pronto: boolean };
 type AprenderStatus = {
   geracao: number; geracoes: number; sigma: number; quedas: number[]; fim: boolean; progresso: number;
-  alcance: number[]; distancia: number;
+  alcance: number[]; distancia: number; real: boolean; iteracao: number | null; origem: string;
 };
 // Atalhos pra revisão: ?modo=solto, ?modo=visao, ?modo=localizar.
 const SHORTCUTS: Record<string, Mode> = {
@@ -441,7 +441,9 @@ export default function PatoExperience() {
             <h1 className="pato-title pato-title-small">
               {aprenderSt.fim
                 ? "Ninguém programou o passo. Ele aprendeu tentando."
-                : `Geração ${aprenderSt.geracao + 1} de ${aprenderSt.geracoes}`}
+                : aprenderSt.real
+                  ? `Geração ${aprenderSt.geracao + 1} de ${aprenderSt.geracoes} · ${aprenderSt.iteracao} iterações de treino`
+                  : `Geração ${aprenderSt.geracao + 1} de ${aprenderSt.geracoes}`}
             </h1>
             <p className="pato-placar">{placar}</p>
             <Curva alcance={aprenderSt.alcance} distancia={aprenderSt.distancia} atual={aprenderSt.fim ? -1 : aprenderSt.geracao} />
@@ -472,8 +474,9 @@ export default function PatoExperience() {
               ideia.
             </p>
             <p className="pato-muted pato-small">
-              Aproximação: aqui o treino é simulado com ruído na política final. O treino real leva
-              horas em GPU.
+              {aprenderSt.real
+                ? `Treino de verdade: cada geração é o pato depois de N iterações do treino da marcha (código da Pollen, ${aprenderSt.origem}).`
+                : "Aproximação: aqui o treino é simulado com ruído na política final. O treino real leva horas em GPU."}
             </p>
           </div>
           <aside data-reserva className="pato-ficha">
